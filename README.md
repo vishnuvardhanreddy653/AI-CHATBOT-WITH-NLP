@@ -18,3 +18,4 @@ An AI chatbot with Natural Language Processing (NLP) is a sophisticated tool des
 
 OUTPUT:
 
+![Image](https://github.com/user-attachments/assets/159b7d13-ff04-4ba9-a01e-545661464539)
