@@ -1,0 +1,228 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "cdcf2b79",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Requirement already satisfied: nltk in c:\\users\\91939\\anaconda3\\lib\\site-packages (3.7)\n",
+      "Requirement already satisfied: joblib in c:\\users\\91939\\anaconda3\\lib\\site-packages (from nltk) (1.1.1)\n",
+      "Requirement already satisfied: tqdm in c:\\users\\91939\\anaconda3\\lib\\site-packages (from nltk) (4.64.1)\n",
+      "Requirement already satisfied: click in c:\\users\\91939\\anaconda3\\lib\\site-packages (from nltk) (8.0.4)\n",
+      "Requirement already satisfied: regex>=2021.8.3 in c:\\users\\91939\\anaconda3\\lib\\site-packages (from nltk) (2022.7.9)\n",
+      "Requirement already satisfied: colorama in c:\\users\\91939\\anaconda3\\lib\\site-packages (from click->nltk) (0.4.6)\n",
+      "Note: you may need to restart the kernel to use updated packages.\n"
+     ]
+    }
+   ],
+   "source": [
+    "pip install nltk"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "9a623611",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import nltk\n",
+    "import random\n",
+    "import string\n",
+    "from nltk.corpus import stopwords\n",
+    "from nltk.stem import WordNetLemmatizer\n",
+    "from sklearn.feature_extraction.text import TfidfVectorizer\n",
+    "from sklearn.metrics.pairwise import cosine_similarity"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "cd39ba55",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "[nltk_data] Downloading package punkt to\n",
+      "[nltk_data]     C:\\Users\\91939\\AppData\\Roaming\\nltk_data...\n",
+      "[nltk_data]   Package punkt is already up-to-date!\n",
+      "[nltk_data] Downloading package wordnet to\n",
+      "[nltk_data]     C:\\Users\\91939\\AppData\\Roaming\\nltk_data...\n",
+      "[nltk_data]   Package wordnet is already up-to-date!\n",
+      "[nltk_data] Downloading package stopwords to\n",
+      "[nltk_data]     C:\\Users\\91939\\AppData\\Roaming\\nltk_data...\n",
+      "[nltk_data]   Package stopwords is already up-to-date!\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "True"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Download necessary data\n",
+    "nltk.download('punkt')\n",
+    "nltk.download('wordnet')\n",
+    "nltk.download('stopwords')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "e3d222a4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Sample knowledge base (can be expanded)\n",
+    "CORPUS = \"\"\"\n",
+    "Hello, how can I assist you?\n",
+    "What is your name?\n",
+    "I am a chatbot built using Python and NLTK.\n",
+    "Tell me a joke.\n",
+    "Why did the math book look sad? Because it had too many problems!\n",
+    "What is NLP?\n",
+    "Natural Language Processing (NLP) is a field of AI that helps computers understand human language.\n",
+    "How are you?\n",
+    "I'm functioning as expected, thank you!\n",
+    "Bye\n",
+    "Goodbye! Have a nice day.\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "5e2ab296",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Tokenize and prepare the data\n",
+    "lemmer = WordNetLemmatizer()\n",
+    "sent_tokens = nltk.sent_tokenize(CORPUS.lower())\n",
+    "\n",
+    "def LemTokens(tokens):\n",
+    "    return [lemmer.lemmatize(token.lower()) for token in tokens if token not in string.punctuation]\n",
+    "\n",
+    "def LemNormalize(text):\n",
+    "    return LemTokens(nltk.word_tokenize(text))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "8df1126e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Greeting responses\n",
+    "greeting_inputs = (\"hello\", \"hi\", \"hey\", \"greetings\")\n",
+    "greeting_responses = [\"Hello!\", \"Hi there!\", \"Hey!\", \"Greetings!\"]\n",
+    "\n",
+    "def greet(sentence):\n",
+    "    for word in sentence.split():\n",
+    "        if word.lower() in greeting_inputs:\n",
+    "            return random.choice(greeting_responses)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "399326da",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Generate chatbot response\n",
+    "def chatbot_response(user_input):\n",
+    "    user_input = user_input.lower()\n",
+    "    temp_tokens = sent_tokens + [user_input]\n",
+    "    vectorizer = TfidfVectorizer(tokenizer=LemNormalize, stop_words=stopwords.words('english'))\n",
+    "    tfidf = vectorizer.fit_transform(temp_tokens)\n",
+    "    similarity_scores = cosine_similarity(tfidf[-1], tfidf[:-1])\n",
+    "    idx = similarity_scores.argsort()[0][-1]\n",
+    "    flat = similarity_scores.flatten()\n",
+    "    flat.sort()\n",
+    "    req_tfidf = flat[-2]\n",
+    "\n",
+    "    if req_tfidf == 0:\n",
+    "        return \"I'm sorry, I don't understand that.\"\n",
+    "    else:\n",
+    "        return sent_tokens[idx]\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "9ca3dc95",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Chat loop\n",
+    "def chat():\n",
+    "    print(\"AI Bot: Hello! Ask me anything or type 'bye' to exit.\")\n",
+    "    while True:\n",
+    "        user_input = input(\"You: \")\n",
+    "        if user_input.lower() == 'bye':\n",
+    "            print(\"AI Bot: Goodbye!\")\n",
+    "            break\n",
+    "        elif greet(user_input):\n",
+    "            print(\"AI Bot:\", greet(user_input))\n",
+    "        else:\n",
+    "            print(\"AI Bot:\", chatbot_response(user_input))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "84180469",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "AI Bot: Hello! Ask me anything or type 'bye' to exit.\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Run chatbot\n",
+    "if __name__ == \"__main__\":\n",
+    "    chat()"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "base",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.9"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
